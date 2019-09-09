@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:marcador_truco/models/player.dart';
+import 'package:screen/screen.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -41,10 +42,23 @@ class _HomePageState extends State<HomePage> {
               _showDialog(
                   title: 'Zerar',
                   message:
-                      'Tem certeza que deseja começar novamente a pontuação?',
-                  confirm: () {
-                    _resetPlayers();
-                  });
+                      'Deseja começar novamente a pontuação?',
+                          confirm: () {
+                          _showDialog(
+                            title: 'Zerar tambem o placar de Vitorias?',
+                            message: 'Pressione OK Para zerar o placar',
+                            confirm: () {
+                              _resetPlayers();
+                            },
+                            cancel: () {
+                              setState(() {                              
+                                    _playerOne.score = 0;
+                                    _playerTwo.score = 0;
+                               }  
+                            );
+                         }
+                      );
+                 } );
             },
             icon: Icon(Icons.refresh),
           )
@@ -73,29 +87,50 @@ class _HomePageState extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: <Widget>[
-          _showPlayerName(player.name),
-          _showPlayerScore(player.score),
-          _showPlayerVictories(player.victories),
-          _showScoreButtons(player),
+                _showPlayerName(name: player.name, onTap: (){
+                _changeNameDialog(name: player.name, confirm: (){
+                          setState(() {
+                            if (_textFieldController.text == "")
+                            player.name = player.name;
+                            else
+                            player.name = _textFieldController.text;
+                            _textFieldController.text = "";
+                      }
+                  
+                  );
+                }, cancel: (){
+              _textFieldController.text = "";
+          });
+      }
+  ),            _showPlayerScore(player.score),
+                _showPlayerVictories(player.victories),
+                _showScoreButtons(player),
         ],
       ),
     );
   }
 
-  Widget _showPlayerName(String name) {
-    return Text(
-      name.toUpperCase(),
-      style: TextStyle(
-          fontSize: 22.0,
-          fontWeight: FontWeight.w500,
-          color: Colors.deepOrange),
-    );
+
+    Widget _showPlayerName({String name, Function onTap}) {
+    return GestureDetector(
+              onTap: onTap,
+              child: Text(
+                name.toUpperCase(),
+                style: TextStyle(
+                    decoration: TextDecoration.underline,
+                    fontSize: 25.0,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.deepOrange),
+              ),
+        );
   }
+
 
   Widget _showPlayerVictories(int victories) {
     return Text(
       "vitórias ( $victories )",
       style: TextStyle(fontWeight: FontWeight.w300),
+      
     );
   }
 
@@ -139,6 +174,9 @@ class _HomePageState extends State<HomePage> {
           onTap: () {
             setState(() {
               player.score--;
+              if(player.score <= 0){
+                player.score = 0;
+              }
             });
           },
         ),
@@ -148,6 +186,10 @@ class _HomePageState extends State<HomePage> {
           onTap: () {
             setState(() {
               player.score++;
+              if(player.score > 12){
+                player.score = 0;
+              }
+              
             });
 
             if (player.score == 12) {
@@ -165,18 +207,62 @@ class _HomePageState extends State<HomePage> {
                     setState(() {
                       player.score--;
                     });
-                  });
+
+                           if (_playerOne.score == 11 && _playerTwo.score == 11){
+                              _showDialog(
+                              title: "Mão de Ferro-11",
+                              message: "Mão de Onze especial, quando as duas duplas conseguem chegar a 11 pontos na partida. Todos os jogadores recebem as cartas “cobertas”, isto é, viradas para baixo, e deverão jogar assim. Quem vencer a mão, vence a partida",
+                              confirm: (){},
+                         );
+                     }
+                });
             }
           },
         ),
       ],
     );
   }
+  
+  TextEditingController _textFieldController = TextEditingController();
 
+  void _changeNameDialog({String name, Function confirm, Function cancel}) async {
+    return showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Alterar nome player"), 
+          content: TextField(
+            controller: _textFieldController,
+            decoration: InputDecoration(hintText: "Nome..."),
+          ),
+          actions: <Widget>[
+            new FlatButton(
+              child: new Text("CANCEL"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _textFieldController.text = " ";
+                if (cancel != null) cancel();
+              },
+            ),
+            new FlatButton(
+              child: new Text("OK"),
+              onPressed: () {
+                Navigator.of(context).pop();
+                if (confirm != null) confirm();
+              },
+            ),
+          ],
+        );
+      });
+  }
+
+//! Caixa de dialogo para vitoria de rodada.
   void _showDialog(
       {String title, String message, Function confirm, Function cancel}) {
     showDialog(
       context: context,
+      barrierDismissible: false, //Travar o AlertDialg para somente desaparecer ao clicar em botões
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(title),
